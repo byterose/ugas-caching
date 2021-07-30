@@ -1,7 +1,6 @@
 import { request } from 'graphql-request';
 import moment from 'moment';
 import axios from 'axios';
-import Assets from '../assets/assets.json';
 import UNIContract from '../abi/uni.json';
 import EMPContract from '../abi/emp.json';
 import erc20 from '../abi/erc20.json';
@@ -49,8 +48,8 @@ export const getMiningRewards = async (
   assetPrice: number,
 ) => {
   // TODO Use params for setup instead of test setup
-  const ethersProvider: ethers.providers.JsonRpcProvider =  EthNodeProvider;
-  const network = 'mainnet';
+  const ethersProvider: ethers.providers.JsonRpcProvider = EthNodeProvider;
+  const network = '1';
 
   /// @dev Check if params are set
   if (!assetName || !asset) {
@@ -307,21 +306,24 @@ const mergeUnique = (arr1: any, arr2: any) => {
 };
 
 const getDevMiningEmps = async (network: String) => {
+  const response = await fetch("https://api.yam.finance/synths/assets");
+  const data = await response.json();
+
   /* @ts-ignore */
-  const assets: AssetGroupModel = Assets[network];
+  const assets: AssetGroupModel = data[network];
   if (assets) {
     /* @ts-ignore */
     const data = [
       /* @ts-ignore */
-      assets["uGAS"][1].emp.address,
+      assets["ugas"][1].emp.address,
       /* @ts-ignore */
-      assets["uGAS"][2].emp.address,
+      assets["ugas"][2].emp.address,
       /* @ts-ignore */
-      assets["uGAS"][3].emp.address,
+      assets["ugas"][3].emp.address,
       /* @ts-ignore */
-      assets["uSTONKS"][0].emp.address,
+      assets["ustonks"][0].emp.address,
       /* @ts-ignore */
-      assets["uSTONKS"][1].emp.address,
+      assets["ustonks"][1].emp.address,
     ];
     const umadata: any = await fetch(
       `https://raw.githubusercontent.com/UMAprotocol/protocol/master/packages/affiliates/payouts/devmining-status.json`

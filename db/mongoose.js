@@ -6,8 +6,7 @@ const highland = require("highland");
 const moment = require("moment");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
-const { getMiningRewards, getPoolData, getUsdPrice } = require("./apr");
-const Asset = require("../assets/assets.json")
+const { getMiningRewards, getPoolData, getUsdPrice } = require("./apr");
 const GasMedian = require("../models/median");
 const Apr = require("../models/apr");
 const Twap = require("../models/twap");
@@ -21,7 +20,6 @@ const client = new BigQuery();
 const uri = `mongodb://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.URI}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 const assetURI =
   "https://raw.githubusercontent.com/yam-finance/degenerative/master/protocol/assets.json";
-const newAssetsURI = "https://api.yam.finance/synths/assets"
 const INFURA_URL = `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`;
 const web3 = new Web3(INFURA_URL);
 
@@ -36,11 +34,11 @@ mongoose
 
 const saveAPR = async () => {
   const currentTime = new Date().toISOString();
-  const response = await fetch(newAssetsURI);
+  const response = await fetch("https://api.yam.finance/synths/assets");
   const data = await response.json();
 
   for (const network in data) {
-    if (network == "mainnet") {
+    if (network == "1") {
       const assetCategories = data[network]
       for (const assetCategory in assetCategories) {
         const assetObject = assetCategories[assetCategory]
@@ -67,13 +65,13 @@ const saveAPR = async () => {
           console.log("clientCalc", clientCalc)
           console.log("------------------------------------")
 
-          const getApr = new Apr({
-            assetName: assetName.toLowerCase(),
-            aprMultiplier: aprMultiplier,
-            timestamp: currentTime,
-          });
+          // const getApr = new Apr({
+          //   assetName: assetName.toLowerCase(),
+          //   aprMultiplier: aprMultiplier,
+          //   timestamp: currentTime,
+          // });
 
-          await getApr.save();
+          // await getApr.save();
         }
       }
     }
