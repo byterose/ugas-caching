@@ -65,13 +65,13 @@ const saveAPR = async () => {
           console.log("clientCalc", clientCalc)
           console.log("------------------------------------")
 
-          // const getApr = new Apr({
-          //   assetName: assetName.toLowerCase(),
-          //   aprMultiplier: aprMultiplier,
-          //   timestamp: currentTime,
-          // });
+          const getApr = new Apr({
+            assetName: assetName.toLowerCase(),
+            aprMultiplier: aprMultiplier,
+            timestamp: currentTime,
+          });
 
-          // await getApr.save();
+          await getApr.save();
         }
       }
     }
