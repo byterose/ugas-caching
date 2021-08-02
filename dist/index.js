@@ -10,11 +10,11 @@ cron.schedule('0 0 * * *', function () {
     mongoFunctions.createMedian();
 });
 // apr scheduler
-cron.schedule('0 */6 * * *', function () {
-    console.log("running apr cron");
-    mongoFunctions.saveAPR();
-});
-// mongoFunctions.saveAPR();
+// cron.schedule('0 */6 * * *', function() {
+//     console.log("running apr cron")
+//     mongoFunctions.saveAPR();
+// });
+mongoFunctions.saveAPR();
 // twap scheduler
 cron.schedule('0 * * * *', function () {
     console.log("running twap cron");

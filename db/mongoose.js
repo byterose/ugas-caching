@@ -44,26 +44,32 @@ const saveAPR = async () => {
         const assetObject = assetCategories[assetCategory]
         for (const assetDetail in assetObject) {
           const asset = assetObject[assetDetail]
+          let aprMultiplier;
           const assetName = assetCategory + "-" + asset.cycle + asset.year
-          const collateral = CollateralData["mainnet"][asset.collateral];
-          const collateralPriceUsd = await getUsdPrice(collateral.coingeckoId ?? '')
-          const pool = await getPoolData(asset.pool)
+          if (!asset.expired) {
+            const collateral = CollateralData["mainnet"][asset.collateral];
+            const collateralPriceUsd = await getUsdPrice(collateral.coingeckoId ?? '')
+            const pool = await getPoolData(asset.pool)
 
-          let priceUsd;
-          let pricePerPaired;
-          if (asset.collateral === pool.token0.symbol) {
-            priceUsd = pool.token0Price * collateralPriceUsd;
-            pricePerPaired = pool.token0Price;
+            let priceUsd;
+            let pricePerPaired;
+            if (asset.collateral === pool.token0.symbol) {
+              priceUsd = pool.token0Price * collateralPriceUsd;
+              pricePerPaired = pool.token0Price;
+            } else {
+              priceUsd = pool.token1Price * collateralPriceUsd;
+              pricePerPaired = pool.token1Price;
+            }
+
+            aprMultiplier = await getMiningRewards(assetName, asset, priceUsd)
+
+            const clientCalc = (1 / (1.5 + 1)) * aprMultiplier;
+            console.log("clientCalc", clientCalc)
+            console.log("------------------------------------")
           } else {
-            priceUsd = pool.token1Price * collateralPriceUsd;
-            pricePerPaired = pool.token1Price;
+            aprMultiplier = 0
           }
 
-          const aprMultiplier = await getMiningRewards(assetName, asset, priceUsd)
-
-          const clientCalc = (1 / (1.5 + 1)) * aprMultiplier;
-          console.log("clientCalc", clientCalc)
-          console.log("------------------------------------")
 
           const getApr = new Apr({
             assetName: assetName.toLowerCase(),

@@ -145,46 +145,64 @@ export const getMiningRewards = async (
 
     /// @dev Prepare calculation
     console.log("assetName", assetName)
+
     // getEmpInfo.tokenCount
     let _tokenCount: number;
+    /// @dev In v2 we use the collateralCount instead of the tokenCount
     if (assetName.toLowerCase().includes("ustonks")) {
-      _tokenCount = Number(utils.formatUnits(getEmpInfo.tokenCount, 6))
+      _tokenCount = Number(utils.formatUnits(getEmpInfo.collateralCount, 6))
     } else {
-      _tokenCount = Number(utils.formatUnits(getEmpInfo.tokenCount, 18))
+      _tokenCount = Number(utils.formatUnits(getEmpInfo.collateralCount, 18))
     }
     console.log("_tokenCount", _tokenCount.toString())
+
     // tokenPrice
-    const _tokenPrice: number = tokenPrice
+    let _tokenPrice: number = tokenPrice
+    /// @dev In v2 we have to use the collateral price
+    if (assetName.toLowerCase().includes("ustonks")) {
+      _tokenPrice = 1;
+    } else {
+      _tokenPrice = await getEthPrice();
+    }
     console.log("_tokenPrice", _tokenPrice)
+
     // whitelistedTVM
-    const _whitelistedTVM: number = Number(whitelistedTVM)
+    let _whitelistedTVM: number = Number(whitelistedTVM)
+    _whitelistedTVM = 67539610.79;
     console.log("_whitelistedTVM", _whitelistedTVM)
+
     // _umaRewards
     var _umaRewards: number = 50_000
 
     if (current >= startDecrease) {
         _umaRewards = 35_000
     }
-
     console.log("_umaRewards", _umaRewards)
+
     // umaPrice
     const _umaPrice: number = umaPrice
     console.log("_umaPrice", _umaPrice)
-    // 0.82
-    const _developerRewardsPercentage: number = 0.82
+
+    // 0.90
+    const _developerRewardsPercentage: number = 0.90
     console.log("_developerRewardsPercentage", _developerRewardsPercentage)
+
     // additionalWeekRewards
     const _additionalWeekRewards: number = additionalWeekRewards
     console.log("_additionalWeekRewards", _additionalWeekRewards)
+
     // calcAsset
     const _calcAsset: number = calcAsset
     console.log("_calcAsset", _calcAsset)
+
     // 1
     const _one: number = 1
     console.log("_one", _one)
+
     // 52
     const _numberOfWeeksInYear: number = 52
     console.log("_numberOfWeeksInYear", _numberOfWeeksInYear)
+
     // cr
     // const _cr: number = cr
     // console.log("_cr", _cr)
@@ -344,6 +362,14 @@ const getDevMiningEmps = async (network: String) => {
   }
 };
 
+const getEthPrice = async () => {
+  const data: any = await fetch(
+    `https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd`
+  );
+  const jsonData = await data.json();
+  return jsonData.ethereum["usd"];
+};
+
 const getContractInfo = async (address: string) => {
   const data: any = await fetch(
     `https://api.coingecko.com/api/v3/coins/ethereum/contract/${address}`
@@ -396,7 +422,10 @@ export function devMiningCalculator({
     const collateralPrice = await getPrice(collateralAddress, toCurrency).catch(
       () => null
     );
-    const collateralCount = (await emp.totalPositionCollateral()).toString();
+    // v1
+    // const collateralCount = (await emp.totalPositionCollateral()).toString();
+    // v2
+    const collateralCount = (await emp.rawTotalPositionCollateral()).toString();
     const collateralDecimals = (await collateralContract.decimals()).toString();
     const collateralRequirement = (
       await emp.collateralRequirement()

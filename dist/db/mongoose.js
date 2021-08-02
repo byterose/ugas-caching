@@ -16,7 +16,6 @@ const moment = require("moment");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
 const { getMiningRewards, getPoolData, getUsdPrice } = require("./apr");
-const Asset = require("../assets/assets.json");
 const GasMedian = require("../models/median");
 const Apr = require("../models/apr");
 const Twap = require("../models/twap");
@@ -40,31 +39,39 @@ mongoose
 const saveAPR = () => __awaiter(this, void 0, void 0, function* () {
     var _a;
     const currentTime = new Date().toISOString();
-    for (const network in Asset) {
-        if (network == "mainnet") {
-            const assetCategories = Asset[network];
+    const response = yield fetch("https://api.yam.finance/synths/assets");
+    const data = yield response.json();
+    for (const network in data) {
+        if (network == "1") {
+            const assetCategories = data[network];
             for (const assetCategory in assetCategories) {
                 const assetObject = assetCategories[assetCategory];
                 for (const assetDetail in assetObject) {
                     const asset = assetObject[assetDetail];
+                    let aprMultiplier;
                     const assetName = assetCategory + "-" + asset.cycle + asset.year;
-                    const collateral = CollateralData["mainnet"][asset.collateral];
-                    const collateralPriceUsd = yield getUsdPrice((_a = collateral.coingeckoId) !== null && _a !== void 0 ? _a : '');
-                    const pool = yield getPoolData(asset.pool);
-                    let priceUsd;
-                    let pricePerPaired;
-                    if (asset.collateral === pool.token0.symbol) {
-                        priceUsd = pool.token0Price * collateralPriceUsd;
-                        pricePerPaired = pool.token0Price;
+                    if (!asset.expired) {
+                        const collateral = CollateralData["mainnet"][asset.collateral];
+                        const collateralPriceUsd = yield getUsdPrice((_a = collateral.coingeckoId) !== null && _a !== void 0 ? _a : '');
+                        const pool = yield getPoolData(asset.pool);
+                        let priceUsd;
+                        let pricePerPaired;
+                        if (asset.collateral === pool.token0.symbol) {
+                            priceUsd = pool.token0Price * collateralPriceUsd;
+                            pricePerPaired = pool.token0Price;
+                        }
+                        else {
+                            priceUsd = pool.token1Price * collateralPriceUsd;
+                            pricePerPaired = pool.token1Price;
+                        }
+                        aprMultiplier = yield getMiningRewards(assetName, asset, priceUsd);
+                        const clientCalc = (1 / (1.5 + 1)) * aprMultiplier;
+                        console.log("clientCalc", clientCalc);
+                        console.log("------------------------------------");
                     }
                     else {
-                        priceUsd = pool.token1Price * collateralPriceUsd;
-                        pricePerPaired = pool.token1Price;
+                        aprMultiplier = 0;
                     }
-                    const aprMultiplier = yield getMiningRewards(assetName, asset, priceUsd);
-                    const clientCalc = (1 / (1.5 + 1)) * aprMultiplier;
-                    console.log("clientCalc", clientCalc);
-                    console.log("------------------------------------");
                     const getApr = new Apr({
                         assetName: assetName.toLowerCase(),
                         aprMultiplier: aprMultiplier,

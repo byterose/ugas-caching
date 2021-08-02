@@ -16,7 +16,6 @@ exports.devMiningCalculator = exports.getUsdPrice = exports.getMiningRewards = e
 const graphql_request_1 = require("graphql-request");
 const moment_1 = __importDefault(require("moment"));
 const axios_1 = __importDefault(require("axios"));
-const assets_json_1 = __importDefault(require("../assets/assets.json"));
 const uni_json_1 = __importDefault(require("../abi/uni.json"));
 const emp_json_1 = __importDefault(require("../abi/emp.json"));
 const erc20_json_1 = __importDefault(require("../abi/erc20.json"));
@@ -26,7 +25,7 @@ const node_fetch_1 = __importDefault(require("node-fetch"));
 const queries_1 = require("./queries");
 const EthNodeProvider = new ethers_1.providers.JsonRpcProvider('https://fee7372b6e224441b747bf1fde15b2bd.eth.rpc.rivet.cloud');
 const getPoolData = (pool) => __awaiter(void 0, void 0, void 0, function* () {
-    const endpoint = pool.location === 'uni' ? queries_1.UNISWAP_ENDPOINT : queries_1.SUSHISWAP_ENDPOINT;
+    const endpoint = pool.location === 'uniswap' ? queries_1.UNISWAP_ENDPOINT : queries_1.SUSHISWAP_ENDPOINT;
     try {
         const data = yield graphql_request_1.request(endpoint, queries_1.UNISWAP_MARKET_DATA_QUERY, { poolAddress: pool.address });
         return data.pair;
@@ -49,7 +48,7 @@ exports.getPoolData = getPoolData;
 const getMiningRewards = (assetName, asset, assetPrice) => __awaiter(void 0, void 0, void 0, function* () {
     // TODO Use params for setup instead of test setup
     const ethersProvider = EthNodeProvider;
-    const network = 'mainnet';
+    const network = '1';
     /// @dev Check if params are set
     if (!assetName || !asset) {
         return 0;
@@ -96,17 +95,19 @@ const getMiningRewards = (assetName, asset, assetPrice) => __awaiter(void 0, voi
         /// @dev Prepare reward calculation
         const current = moment_1.default().unix();
         /// @TODO Update week1UntilWeek2 and week3UntilWeek4 timestamps for uPUNKS after launch.
-        const week1UntilWeek2 = 1615665600;
-        const week3UntilWeek4 = 1616961600;
+        const startRewardsTs = 1624309200;
+        const week1UntilWeek2 = 1625518800;
+        const week3UntilWeek4 = 1626728400;
+        const startDecrease = 1625518800;
         const umaRewards = rewards[asset.emp.address];
         let yamWeekRewards = 0;
         let umaWeekRewards = 0;
         /// @TODO Check assetName
         if (assetName.toLowerCase() === "upunks-0921") {
-            if (current < week1UntilWeek2) {
+            if (current <= week1UntilWeek2 && current >= startRewardsTs) {
                 umaWeekRewards += 5000;
             }
-            else if (current < week3UntilWeek4) {
+            else if (current <= week3UntilWeek4 && current > week1UntilWeek2) {
                 yamWeekRewards += 5000;
             }
         }
@@ -116,34 +117,51 @@ const getMiningRewards = (assetName, asset, assetPrice) => __awaiter(void 0, voi
         const additionalWeekRewards = umaWeekRewards * umaPrice + yamWeekRewards * yamPrice;
         const assetReserve0 = ethers_1.BigNumber.from(contractLpCall._reserve0).div(baseAsset).toNumber();
         const assetReserve1 = ethers_1.BigNumber.from(contractLpCall._reserve1).div(baseCollateral).toNumber();
-        calcAsset = assetReserve0 * tokenPrice;
-        calcCollateral = assetReserve1 * (asset.collateral == "WETH" ? ethPrice : 1);
+        if (assetName == "ustonks-0921") {
+            calcAsset = assetReserve1 * tokenPrice;
+            calcCollateral = assetReserve0 * (asset.collateral == "WETH" ? ethPrice : 1);
+        }
+        else {
+            calcAsset = assetReserve0 * tokenPrice;
+            calcCollateral = assetReserve1 * (asset.collateral == "WETH" ? ethPrice : 1);
+        }
         /// @dev Prepare calculation
         console.log("assetName", assetName);
         // getEmpInfo.tokenCount
-        let _tokenCount;
+        let _collateralCount;
+        /// @dev In v2 we use the collateralCount instead of the tokenCount
         if (assetName.toLowerCase().includes("ustonks")) {
-            _tokenCount = Number(ethers_1.utils.formatUnits(getEmpInfo.tokenCount, 6));
+            _collateralCount = Number(ethers_1.utils.formatUnits(getEmpInfo.collateralCount, 6));
         }
         else {
-            _tokenCount = Number(ethers_1.utils.formatUnits(getEmpInfo.tokenCount, 18));
+            _collateralCount = Number(ethers_1.utils.formatUnits(getEmpInfo.collateralCount, 18));
         }
-        console.log("_tokenCount", _tokenCount.toString());
+        console.log("_collateralCount", _collateralCount.toString());
         // tokenPrice
-        const _tokenPrice = tokenPrice;
-        console.log("_tokenPrice", _tokenPrice);
+        let _collateralPrice = tokenPrice;
+        /// @dev In v2 we have to use the collateral price
+        if (assetName.toLowerCase().includes("ustonks")) {
+            _collateralPrice = 1;
+        }
+        else {
+            _collateralPrice = yield getEthPrice();
+        }
+        console.log("_collateralPrice", _collateralPrice);
         // whitelistedTVM
-        const _whitelistedTVM = Number(whitelistedTVM);
+        let _whitelistedTVM = Number(whitelistedTVM);
+        _whitelistedTVM = 67539610.79;
         console.log("_whitelistedTVM", _whitelistedTVM);
-        // 50_000
-        /// @TODO Check why umaRewards != 50_000
-        const _umaRewards = 50000;
+        // _umaRewards
+        var _umaRewards = 50000;
+        if (current >= startDecrease) {
+            _umaRewards = 35000;
+        }
         console.log("_umaRewards", _umaRewards);
         // umaPrice
         const _umaPrice = umaPrice;
         console.log("_umaPrice", _umaPrice);
-        // 0.82
-        const _developerRewardsPercentage = 0.82;
+        // 0.90
+        const _developerRewardsPercentage = 0.90;
         console.log("_developerRewardsPercentage", _developerRewardsPercentage);
         // additionalWeekRewards
         const _additionalWeekRewards = additionalWeekRewards;
@@ -163,7 +181,7 @@ const getMiningRewards = (assetName, asset, assetPrice) => __awaiter(void 0, voi
         // @notice New calculation based on the doc
         /// @TODO Check _whitelistedTVM
         // umaRewardsPercentage = (`totalTokensOutstanding` * synthPrice) / whitelistedTVM
-        let umaRewardsPercentage = (_tokenCount * _tokenPrice) / _whitelistedTVM;
+        let umaRewardsPercentage = (_collateralCount * _collateralPrice) / _whitelistedTVM;
         console.log("umaRewardsPercentage", umaRewardsPercentage.toString());
         // dynamicAmountPerWeek = 50,000 * umaRewardsPercentage
         const dynamicAmountPerWeek = _umaRewards * umaRewardsPercentage;
@@ -186,7 +204,7 @@ const getMiningRewards = (assetName, asset, assetPrice) => __awaiter(void 0, voi
         // General APR = (sponsorAmountPerDollarMintedPerWeek * chosen collateralEfficiency * 52)
         let aprMultiplier = sponsorAmountPerDollarMintedPerWeek * _numberOfWeeksInYear * 100;
         console.log("aprMultiplier", aprMultiplier.toString());
-        if (aprMultiplier === Infinity || _tokenPrice === undefined) {
+        if (aprMultiplier === Infinity || _collateralPrice === undefined) {
             aprMultiplier = 0;
         }
         return aprMultiplier.toString();
@@ -258,21 +276,23 @@ const mergeUnique = (arr1, arr2) => {
     }));
 };
 const getDevMiningEmps = (network) => __awaiter(void 0, void 0, void 0, function* () {
+    const response = yield node_fetch_1.default("https://api.yam.finance/synths/assets");
+    const data = yield response.json();
     /* @ts-ignore */
-    const assets = assets_json_1.default[network];
+    const assets = data[network];
     if (assets) {
         /* @ts-ignore */
         const data = [
             /* @ts-ignore */
-            assets["uGAS"][1].emp.address,
+            assets["ugas"][1].emp.address,
             /* @ts-ignore */
-            assets["uGAS"][2].emp.address,
+            assets["ugas"][2].emp.address,
             /* @ts-ignore */
-            assets["uGAS"][3].emp.address,
+            assets["ugas"][3].emp.address,
             /* @ts-ignore */
-            assets["uSTONKS"][0].emp.address,
+            assets["ustonks"][0].emp.address,
             /* @ts-ignore */
-            assets["uSTONKS"][1].emp.address,
+            assets["ustonks"][1].emp.address,
         ];
         const umadata = yield node_fetch_1.default(`https://raw.githubusercontent.com/UMAprotocol/protocol/master/packages/affiliates/payouts/devmining-status.json`);
         const umaDataJson = yield umadata.json();
@@ -287,6 +307,11 @@ const getDevMiningEmps = (network) => __awaiter(void 0, void 0, void 0, function
         return -1;
     }
 });
+const getEthPrice = () => __awaiter(void 0, void 0, void 0, function* () {
+    const data = yield node_fetch_1.default(`https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd`);
+    const jsonData = yield data.json();
+    return jsonData.ethereum["usd"];
+});
 const getContractInfo = (address) => __awaiter(void 0, void 0, void 0, function* () {
     const data = yield node_fetch_1.default(`https://api.coingecko.com/api/v3/coins/ethereum/contract/${address}`);
     const jsonData = yield data.json();
@@ -294,7 +319,12 @@ const getContractInfo = (address) => __awaiter(void 0, void 0, void 0, function*
 });
 const getPriceByContract = (address, toCurrency) => __awaiter(void 0, void 0, void 0, function* () {
     // TODO: Remove while loop
+    let loopCount = 0;
     let result = yield getContractInfo(address);
+    while (!result && loopCount < 10) {
+        result = yield getContractInfo(address);
+        loopCount += 1;
+    }
     return (result &&
         result.market_data &&
         result.market_data.current_price[toCurrency || "usd"]);
@@ -307,22 +337,22 @@ function devMiningCalculator({ provider, ethers, getPrice, empAbi, erc20Abi, }) 
             const emp = new ethers.Contract(address, empAbi, provider);
             const tokenAddress = yield emp.tokenCurrency();
             const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, provider);
-            /// @dev Fetches the token price from coingecko using getPriceByContract (getPrice == getPriceByContract)
-            const tokenPrice = yield getPrice(tokenAddress, toCurrency).catch(() => null);
             const tokenCount = (yield emp.totalTokensOutstanding()).toString();
             const tokenDecimals = (yield tokenContract.decimals()).toString();
             const collateralAddress = yield emp.collateralCurrency();
             const collateralContract = new ethers.Contract(collateralAddress, erc20Abi, provider);
             /// @dev Fetches the collateral price from coingecko using getPriceByContract (getPrice == getPriceByContract)
             const collateralPrice = yield getPrice(collateralAddress, toCurrency).catch(() => null);
-            const collateralCount = (yield emp.totalPositionCollateral()).toString();
+            // v1
+            // const collateralCount = (await emp.totalPositionCollateral()).toString();
+            // v2
+            const collateralCount = (yield emp.rawTotalPositionCollateral()).toString();
             const collateralDecimals = (yield collateralContract.decimals()).toString();
             const collateralRequirement = (yield emp.collateralRequirement()).toString();
             return {
                 address,
                 toCurrency,
                 tokenAddress,
-                tokenPrice,
                 tokenCount,
                 tokenDecimals,
                 collateralAddress,
@@ -334,24 +364,37 @@ function devMiningCalculator({ provider, ethers, getPrice, empAbi, erc20Abi, }) 
         });
     }
     /// @dev Returns a fixed number
-    function calculateEmpValue({ tokenPrice, tokenDecimals, collateralPrice, collateralDecimals, tokenCount, collateralCount, collateralRequirement, }) {
-        /// @dev If we have a token price, use this first to estimate EMP value
-        if (tokenPrice) {
-            const fixedPrice = FixedNumber.from(tokenPrice.toString());
-            const fixedSize = FixedNumber.fromValue(tokenCount, tokenDecimals);
-            return fixedPrice.mulUnsafe(fixedSize);
-        }
-        /** @dev Theres no token price then fallback to collateral price divided by
-          * the collateralization requirement (usually 1.2) this should give a
-          * ballpack of what the total token value will be. Its still an over estimate though.
-         */
-        if (collateralPrice) {
-            const fixedPrice = FixedNumber.from(collateralPrice.toString());
-            const collFixedSize = FixedNumber.fromValue(collateralCount, collateralDecimals);
-            return fixedPrice
-                .mulUnsafe(collFixedSize)
-                .divUnsafe(FixedNumber.fromValue(collateralRequirement, 18));
-        }
+    function calculateEmpValue({ tokenDecimals, collateralPrice, collateralDecimals, tokenCount, collateralCount, collateralRequirement, }) {
+        const fallbackCr = "2000000000000000000";
+        const fixedPrice = FixedNumber.from(collateralPrice.toString());
+        const collFixedSize = FixedNumber.fromValue(collateralCount, collateralDecimals);
+        return fixedPrice
+            .mulUnsafe(collFixedSize)
+            .divUnsafe(FixedNumber.fromValue(fallbackCr, 18));
+        // /// @dev If we have a token price, use this first to estimate EMP value
+        // if (tokenPrice) {
+        //   const fixedPrice = FixedNumber.from(tokenPrice.toString());
+        //   const fixedSize = FixedNumber.fromValue(tokenCount, tokenDecimals);
+        //   return fixedPrice.mulUnsafe(fixedSize);
+        // }
+        //
+        // /** @dev Theres no token price then fallback to collateral price divided by
+        //   * the collateralization requirement (usually 1.2) this should give a
+        //   * ballpack of what the total token value will be. Its still an over estimate though.
+        //  */
+        // if (collateralPrice) {
+        //   const fixedPrice = FixedNumber.from(collateralPrice.toString());
+        //   const collFixedSize = FixedNumber.fromValue(
+        //     collateralCount,
+        //     collateralDecimals
+        //   );
+        //
+        //   const fallbackCr = "1250000000000000000"
+        //
+        //   return fixedPrice
+        //     .mulUnsafe(collFixedSize)
+        //     .divUnsafe(FixedNumber.fromValue(fallbackCr, 18));
+        // }
         throw new Error("Unable to calculate emp value, no token price or collateral price");
     }
     function estimateDevMiningRewards({ totalRewards, empWhitelist, }) {
