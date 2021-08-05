@@ -361,7 +361,12 @@ const getDevMiningEmps = async (network: String) => {
   }
 };
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 const getEthPrice = async () => {
+  await sleep(500);
   const data: any = await fetch(
     `https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd`
   );
@@ -370,6 +375,7 @@ const getEthPrice = async () => {
 };
 
 const getContractInfo = async (address: string) => {
+  await sleep(500);
   const data: any = await fetch(
     `https://api.coingecko.com/api/v3/coins/ethereum/contract/${address}`
   );
