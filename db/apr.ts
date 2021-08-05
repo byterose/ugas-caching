@@ -168,7 +168,6 @@ export const getMiningRewards = async (
 
     // whitelistedTVM
     let _whitelistedTVM: number = Number(whitelistedTVM)
-    _whitelistedTVM = 67539610.79;
     console.log("_whitelistedTVM", _whitelistedTVM)
 
     // _umaRewards
