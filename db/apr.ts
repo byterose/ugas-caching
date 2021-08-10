@@ -167,8 +167,8 @@ export const getMiningRewards = async (
     console.log("_tokenPrice", _tokenPrice)
 
     // whitelistedTVM
-    let _whitelistedTVM: number = Number(whitelistedTVM)
-    console.log("_whitelistedTVM", _whitelistedTVM)
+    let _whitelistedTVL: number = Number(whitelistedTVM)
+    console.log("_whitelistedTVL", _whitelistedTVL)
 
     // _umaRewards
     var _umaRewards: number = 50_000
@@ -208,9 +208,9 @@ export const getMiningRewards = async (
 
 
     // @notice New calculation based on the doc
-    /// @TODO Check _whitelistedTVM
+    /// @TODO Check _whitelistedTVL
     // umaRewardsPercentage = (`totalTokensOutstanding` * synthPrice) / whitelistedTVM
-    let umaRewardsPercentage: number = (_tokenCount * _tokenPrice) / _whitelistedTVM;
+    let umaRewardsPercentage: number = (_tokenCount * _tokenPrice) / _whitelistedTVL;
     console.log("umaRewardsPercentage", umaRewardsPercentage.toString())
 
     // dynamicAmountPerWeek = 50,000 * umaRewardsPercentage
@@ -229,16 +229,16 @@ export const getMiningRewards = async (
     const totalWeeklyRewards: number = standardWeeklyRewards + _additionalWeekRewards;
     console.log("totalWeeklyRewards", totalWeeklyRewards.toString())
 
-    // sponsorAmountPerDollarMintedPerWeek = totalWeeklyRewards / (Synth in AMM pool * synth price)
-    const sponsorAmountPerDollarMintedPerWeek: number = totalWeeklyRewards / _calcAsset;
-    console.log("sponsorAmountPerDollarMintedPerWeek", sponsorAmountPerDollarMintedPerWeek.toString())
+    // sponsorAmountPerDollarDepositedPerWeek = totalWeeklyRewards / (Synth in AMM pool * synth price)
+    const sponsorAmountPerDollarDepositedPerWeek: number = totalWeeklyRewards / ((_tokenCount * _tokenPrice) + _calcAsset);
+    console.log("sponsorAmountPerDollarDepositedPerWeek", sponsorAmountPerDollarDepositedPerWeek.toString())
 
     // collateralEfficiency = 1 / (CR + 1)
     // const collateralEfficiency: number = 1 / (_cr + 1)
     // console.log("collateralEfficiency", collateralEfficiency)
 
-    // General APR = (sponsorAmountPerDollarMintedPerWeek * chosen collateralEfficiency * 52)
-    let aprMultiplier: number = sponsorAmountPerDollarMintedPerWeek * _numberOfWeeksInYear * 100;
+    // General APR = (sponsorAmountPerDollarDepositedPerWeek * chosen collateralEfficiency * 52)
+    let aprMultiplier: number = sponsorAmountPerDollarDepositedPerWeek * _numberOfWeeksInYear * 100;
     console.log("aprMultiplier", aprMultiplier.toString())
 
     if (aprMultiplier === Infinity || _tokenPrice === undefined) {

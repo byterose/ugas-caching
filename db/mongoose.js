@@ -63,13 +63,10 @@ const saveAPR = async () => {
 
             aprMultiplier = await getMiningRewards(assetName, asset, priceUsd)
 
-            const clientCalc = (1 / (1.5 + 1)) * aprMultiplier;
-            console.log("clientCalc", clientCalc)
             console.log("------------------------------------")
           } else {
             aprMultiplier = 0
           }
-
 
           const getApr = new Apr({
             assetName: assetName.toLowerCase(),
