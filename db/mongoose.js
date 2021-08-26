@@ -667,9 +667,9 @@ const twapCreation = async (req, res, next) => {
       roundingDecimals: roundingDecimals,
     });
 
-    console.log(createdTwap);
+    // console.log(createdTwap);
 
-    // await createdTwap.save();
+    await createdTwap.save();
   }
 };
 
