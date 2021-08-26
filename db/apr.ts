@@ -24,7 +24,7 @@ const EthNodeProvider = new providers.JsonRpcProvider(
 export const getPoolData = async (pool: ILiquidityPool) => {
   const endpoint = pool.location === 'uniswap' ? UNISWAP_ENDPOINT : SUSHISWAP_ENDPOINT;
   try {
-    const data = await request(endpoint, UNISWAP_MARKET_DATA_QUERY, { poolAddress: pool.address });
+    const data = await request(endpoint, UNISWAP_MARKET_DATA_QUERY, { poolAddress: pool.address.toLowerCase() });
     return data.pair;
   } catch (err) {
     console.log(err);
