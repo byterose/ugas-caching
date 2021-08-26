@@ -533,7 +533,7 @@ const getTwaps = async (req, res, next) => {
 };
 
 const getTwapsWithParam = async (req, res, next) => {
-  const passedAddress = req.params.address;
+  const passedAddress = req.params.address.toLowerCase();
   const twaps = await Twap.find({ address: { $eq: passedAddress } }, { _id: 0 })
     .select("timestamp asset address price collateral roundingDecimals")
     .exec();
@@ -559,7 +559,7 @@ const getTwapsWithParam = async (req, res, next) => {
 };
 
 const getLatestTwapWithParam = async (req, res, next) => {
-  const passedAddress = req.params.address;
+  const passedAddress = req.params.address.toLowerCase();
   const twaps = await Twap.find({ address: { $eq: passedAddress } }, { _id: 0 })
     .select("timestamp asset address price collateral roundingDecimals")
     .exec();
@@ -660,7 +660,7 @@ const twapCreation = async (req, res, next) => {
 
     const createdTwap = new Twap({
       asset: assetPairArray[assetPoolAddress].key,
-      address: assetPairArray[assetPoolAddress].value,
+      address: assetPairArray[assetPoolAddress].value.toLowerCase(),
       timestamp: time,
       price: price.toString(),
       collateral: assetPairArray[assetPoolAddress].collateral,
