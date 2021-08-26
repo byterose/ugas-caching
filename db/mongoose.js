@@ -74,7 +74,7 @@ const saveAPR = async () => {
             timestamp: currentTime,
           });
 
-          await getApr.save();
+          // await getApr.save();
         }
       }
     }
@@ -608,57 +608,72 @@ const twapCreation = async (req, res, next) => {
   let priceFeed;
   let roundingDecimals;
   const assetPairArray = [];
-  const response = await fetch(assetURI);
+  const response = await fetch("https://api.yam.finance/synths/assets");
   const data = await response.json();
 
-  for (const assets in data) {
-    const assetDetails = data[assets];
-    for (const asset in assetDetails) {
-      assetPairArray.push({
-        key: `${assets.toUpperCase()}-${assetDetails[asset].cycle}${
-          assetDetails[asset].year
-        }`,
-        value: assetDetails[asset].pool.address,
-        collateral: assetDetails[asset].collateral,
-      });
+  for (const network in data) {
+    if (network == "1") {
+      const assetCategories = data[network]
+      if (assetCategory == 'ugas') {      
+        for (const assetCategory in assetCategories) {
+          const assetObject = assetCategories[assetCategory]
+          for (const assetDetail in assetObject) {
+            const asset = assetObject[assetDetail]
+
+            if (!asset.expired) {
+              assetPairArray.push({
+                key: `${assetCategory}-${asset.cycle}${asset.year}`,
+                value: asset.pool.address,
+                collateral: asset.collateral 
+              });
+            }
+
+          }
+        }
+      }
     }
   }
 
-  for (const assetPairAddress in assetPairArray) {
+  for (const assetPoolAddress in assetPairArray) {
     try {
       priceFeed = await TestingUniPriceFunctions.usePriceFeed(
-        assetPairArray[assetPairAddress].value
+        assetPairArray[assetPoolAddress].value
       );
     } catch (err) {
       console.log(err);
     }
+
     let price = new BigNumber(priceFeed.getCurrentPrice());
     let time = new Date(priceFeed.lastUpdateTime * 1000).toISOString()
+    price = price.multipliedBy(new BigNumber(10).pow(-18)).toFixed();
+    roundingDecimals = 4;
 
-    if (
-      assetPairArray[assetPairAddress].value ==
-      "0xedf187890af846bd59f560827ebd2091c49b75df"
-    ) {
-      price = new BigNumber(1).dividedBy(price);
-      price = price.multipliedBy(new BigNumber(10).pow(18)).toFixed();
-      roundingDecimals = 2;
-    } else {
-      price = price.multipliedBy(new BigNumber(10).pow(-18)).toFixed();
-      roundingDecimals = 4;
+    /// @dev This block serves as an example on how to deal with switche asset pairs
+    // if (
+    //   assetPairArray[assetPoolAddress].value ==
+    //   "0xedf187890af846bd59f560827ebd2091c49b75df"
+    // ) {
+    //   price = new BigNumber(1).dividedBy(price);
+    //   price = price.multipliedBy(new BigNumber(10).pow(18)).toFixed();
+    //   roundingDecimals = 2;
+    // } else {
+    //   price = price.multipliedBy(new BigNumber(10).pow(-18)).toFixed();
+    //   roundingDecimals = 4;
 
-      if (assetPairArray[assetPairAddress].key.includes("USTONKS")) {
-        roundingDecimals = 2;
-      }
-    }
+    //   if (assetPairArray[assetPoolAddress].key.includes("ustonks")) {
+    //     roundingDecimals = 2;
+    //   }
+    // }
 
     const createdTwap = new Twap({
-      asset: assetPairArray[assetPairAddress].key,
-      address: assetPairArray[assetPairAddress].value,
+      asset: assetPairArray[assetPoolAddress].key,
+      address: assetPairArray[assetPoolAddress].value,
       timestamp: time,
       price: price.toString(),
-      collateral: assetPairArray[assetPairAddress].collateral,
+      collateral: assetPairArray[assetPoolAddress].collateral,
       roundingDecimals: roundingDecimals,
     });
+    
     await createdTwap.save();
   }
 };
