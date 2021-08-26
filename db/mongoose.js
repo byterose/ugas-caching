@@ -74,7 +74,7 @@ const saveAPR = async () => {
             timestamp: currentTime,
           });
 
-          // await getApr.save();
+          await getApr.save();
         }
       }
     }
@@ -673,7 +673,7 @@ const twapCreation = async (req, res, next) => {
       collateral: assetPairArray[assetPoolAddress].collateral,
       roundingDecimals: roundingDecimals,
     });
-    
+
     await createdTwap.save();
   }
 };
