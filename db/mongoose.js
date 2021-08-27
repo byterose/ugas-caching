@@ -648,7 +648,7 @@ const twapCreation = async (req, res, next) => {
     /// @dev This block serves as an example on how to deal with switche asset pairs
     if (
       assetPairArray[assetPoolAddress].value ==
-      "0x5CCD155ad26B74913ed6266A516A085A2343D426" 
+      "0x5CCD155ad26B74913ed6266A516A085A2343D426".toLowerCase() 
     ) {
       price = new BigNumber(1).dividedBy(price);
       price = price.multipliedBy(new BigNumber(10).pow(18)).toFixed();
@@ -667,7 +667,7 @@ const twapCreation = async (req, res, next) => {
       roundingDecimals: roundingDecimals,
     });
 
-    // console.log(createdTwap);
+    console.log(createdTwap);
 
     await createdTwap.save();
   }
